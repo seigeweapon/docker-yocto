@@ -28,7 +28,7 @@ SNAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 
 # check for directory architecture
 YOCTODIR="${SDIR}"
-IMAGE="coldnew/yocto-build"
+IMAGE="seigeweapon/yocto-build"
 CONTAINER="yocto-build"
 
 ############################################################
@@ -128,7 +128,7 @@ do
     case "$1" in
     -u | --upgrade)
         INFO "Upgrade script $NAME"
-        curl https://raw.githubusercontent.com/coldnew/docker-yocto/master/yocto-build.sh > /tmp/$SNAME
+        curl https://raw.githubusercontent.com/seigeweapon/docker-yocto/master/yocto-build.sh > /tmp/$SNAME
         mv /tmp/$SNAME $SDIR/$SNAME
         chmod +x $SDIR/$SNAME
         exit $?
@@ -185,9 +185,6 @@ do
                    --volume="${HOME}/.ssh:/home/${USER}/.ssh" \
                    --volume="${HOME}/.gitconfig:/home/${USER}/.gitconfig" \
                    --volume="/etc/localtime:/etc/localtime:ro" \
-                   --env="DISPLAY" \
-                   --env="QT_X11_NO_MITSHM=1" \
-                   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
                    --env=HOST_UID=$(id -u) \
                    --env=HOST_GID=$(id -g) \
                    --env=USER=${USER} \
