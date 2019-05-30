@@ -1,10 +1,10 @@
 all: build
 
 build:
-	docker build -t coldnew/yocto-build .
+	docker build -t seigeweapon/yocto-build .
 
 run:
-	docker run -it coldnew/yocto-build
+	docker run -it seigeweapon/yocto-build
 
 deploy:
-	docker push coldnew/yocto-build
+	docker push seigeweapon/yocto-build
