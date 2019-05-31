@@ -23,7 +23,7 @@ groupadd ${USER_GID}
 
 # Create user
 useradd ${USER} --shell /bin/bash --create-home \
-	--uid ${USER_UID} --gid ${USER_GID} > /dev/null 2>&1
+	--uid ${USER_UID} > /dev/null 2>&1
 
 echo 'ALL ALL = (ALL) NOPASSWD: ALL' >> /etc/sudoers
 

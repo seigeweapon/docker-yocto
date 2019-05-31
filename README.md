@@ -25,6 +25,11 @@ export PATH=~/bin:$PATH
 
 ## Basic Usage
 
+First, build the docker image by simply:
+```sh
+make
+```
+
 First time to use the `yocto-build` command, you need to tell it where is the workdir we build the yocto image.
 
 For example, if I want to build yocto at `/home/coldnew/poky` then:
