@@ -25,7 +25,8 @@ RUN buildDeps='curl vim locales gawk wget git-core diffstat unzip texinfo gcc-mu
      && chmod a+x /usr/bin/gn \
      && locale-gen en_US.UTF-8 \
      && apt-get autoremove -y \
-     && echo 'root:1234' | chpasswd
+     && echo 'root:1234' | chpasswd \
+     && echo 'xliu:1234' | chpasswd
 
 # Set the locale, else yocto will complain
 ENV DEBIAN_FRONTEND=noninteractive \
