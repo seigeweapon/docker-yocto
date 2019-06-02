@@ -29,7 +29,7 @@ SNAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 # check for directory architecture
 YOCTODIR="${SDIR}"
 IMAGE="seigeweapon/yocto-build"
-CONTAINER="yocto-build"
+CONTAINER="yocto-build-${USER}"
 
 ############################################################
 #### Library for common usage functions
