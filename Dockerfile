@@ -1,31 +1,36 @@
 # This dockerfile uses the ubuntu image
-# VERSION 0 - EDITION 1
-# Author:  Yen-Chin, Lee <yenchin@weintek.com>
-#          xliu <liuxin8166@bytedance.com>
-# Command format: Instruction [arguments / command] ..
+# VERSION 0.1
+# Author: xliu <liuxin8166@bytedance.com>
 
 FROM ubuntu:18.04
 LABEL maintainer="liuxin8166@bytedance.com"
 
-## Install requred packages, and configuration:
-# 1. Essentials from http://www.yoctoproject.org/docs/current/ref-manual/ref-manual.html
-# 2. google repo tool
-# 3. gn tool
-# 4. give root password
-
 RUN buildDeps='curl vim locales gawk wget git-core diffstat unzip texinfo gcc-multilib \
      build-essential chrpath socat cpio rpm2cpio python python3 python3-pip python3-pexpect \
      xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev \
-     ninja-build xterm sudo locales' \
-     && apt-get update -y \
-     && apt-get install -y $buildDeps \
-     && apt-get autoremove -y \
-     && curl https://storage.googleapis.com/git-repo-downloads/repo > /usr/bin/repo \
-     && chmod a+x /usr/bin/repo \
-     && curl http://storage.googleapis.com/chromium-gn/3fd43e5e0dcc674f0a0c004ec290d04bb2e1c60e > /usr/bin/gn \
-     && chmod a+x /usr/bin/gn \
-     && locale-gen en_US.UTF-8 \
-     && echo 'root:1234' | chpasswd
+     ninja-build xterm locales' &&\
+     apt-get update -y &&\
+     apt-get install -y $buildDeps &&\
+     apt-get autoremove -y
+
+RUN  curl https://storage.googleapis.com/git-repo-downloads/repo > /usr/bin/repo &&\
+     chmod a+x /usr/bin/repo &&\
+     curl http://storage.googleapis.com/chromium-gn/3fd43e5e0dcc674f0a0c004ec290d04bb2e1c60e > /usr/bin/gn &&\
+     chmod a+x /usr/bin/gn
+
+RUN  locale-gen en_US.UTF-8 &&\
+     echo 'root:1234' | chpasswd
+
+ARG USER_NAME
+ARG HOST_UID
+ARG HOST_GID
+
+RUN  groupadd ${USER_NAME} --force --gid ${HOST_GID} &&\
+     useradd -l --uid ${HOST_UID} --gid ${HOST_GID} ${USER_NAME} &&\
+     install -d -m 0755 -o ${USER_NAME} -g ${USER_NAME} /home/${USER_NAME} &&\
+     chown --changes --silent --no-dereference --recursive ${HOST_UID}:${HOST_GID} /home/${USER_NAME}
+
+USER ${USER_NAME}
 
 # default workdir is /yocto
 WORKDIR /yocto
@@ -36,8 +41,4 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
-# Add entry point, we use entrypoint.sh to mapping host user to
-# container
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

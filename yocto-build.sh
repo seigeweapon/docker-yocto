@@ -1,24 +1,5 @@
 #!/bin/bash
-# -*- mode: shell-script; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
-#
-# Copyright (C) 2018 coldnew
-# Authored-by:  Yen-Chin, Lee <coldnew.tw@gmail.com>
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-
-# We should not have any trouble on running this script
 # set -x
 
 # SDIR store this script path
@@ -28,7 +9,7 @@ SNAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 
 # check for directory architecture
 YOCTODIR="${SDIR}"
-IMAGE="seigeweapon/yocto-build"
+IMAGE="seigeweapon/yocto-build-${USER}"
 CONTAINER="yocto-build-${USER}"
 
 ############################################################
@@ -65,51 +46,40 @@ Usage: $0 <arguments>
 
 Arguments:
 
-    -a, --attach    : attach to current runing container
-    -s, --shell     : spawn a new shell to current container
+    -b, --buildenv  : build docker image
     -w, --workdir   : yocto workspace to shared with docker container
     -r, --rm        : remove current working container
-    -u, --upgrade   : upgrade this script
-    -p, --pull      : pull new docker container image
     -h, --help      : show this help info
 
 Description:
 
-    The first time you run this script, you should specify yor
-    yocto project directory like following:
+    First thing first, copy $0 to PATH:
 
-        $0 --workdir /home/coldnew/poky
+        cp $0 ~/bin/yocto-build
 
-    This script will help you to pull the docker image and mount
-    the /home/coldnew/poky to container's /yocto directory, and
-    you can build you yocto in this container.
+    First time use, need to build the docker image by:
 
-    If you want to attach current running shell, you can use:
+        $0 --buildenv
 
-        $0 --attach
+    To run a build script, do this:
+    
+        $0 --workdir <path-to-yocto-project> ./cleanbuild.sh
 
-    If you want to create a new shell, use:
+    Or, if you want to do it interactively, just:
 
-        $0 --shell
+        $0 --workdir <path-to-yocto-project>
 
-    After all build done, you can remove current container by using:
+    Each time the build is done, the container will be removed automatically,
+    but if it's interupted and not properly exited, you can remove it by:
 
         $0 --rm
-
-    To upgrade this script, type:
-
-        $0 --upgrade
-
-    To pull the new docker container image, type:
-
-        $0 --pull
 
 EOF
 }
 
 # NOTE: This requires GNU getopt.  On Mac OS X and FreeBSD, you have
 # to install this separately
-TEMP=`getopt -o uasw:rph --long upgrade,attach,shell,workdir:,rm,pull,help -- "$@"`
+TEMP=`getopt -o w:brh --long workdir:,buildenv,rm,help -- "$@"`
 
 if [ $? != 0 ] ; then
     usage
@@ -126,18 +96,6 @@ fi
 while true
 do
     case "$1" in
-    -u | --upgrade)
-        INFO "Upgrade script $NAME"
-        curl https://raw.githubusercontent.com/seigeweapon/docker-yocto/master/yocto-build.sh > /tmp/$SNAME
-        mv /tmp/$SNAME $SDIR/$SNAME
-        chmod +x $SDIR/$SNAME
-        exit $?
-        ;;
-    -p | --pull)
-        INFO "Pull new image: $IMAGE"
-        docker pull $IMAGE
-        exit $?
-        ;;
     -h | --help)
         usage; exit 0
         ;;
@@ -150,47 +108,25 @@ do
         fi
         exit $?
         ;;
-    -s | --shell)
-        if docker inspect $CONTAINER > /dev/null 2>&1 ; then
-            INFO "Spawn /bin/bash for container: $CONTAINER"
-            docker exec -it $CONTAINER /entrypoint.sh
-        else
-            ERROR "container: $CONTAINER not exist, please use '$0 --workdir <dir to share>' first"
-            exit -1
-        fi
-        exit $?
-        ;;
-    -a | --attach)
-        if docker inspect $CONTAINER > /dev/null 2>&1 ; then
-            INFO "Atttach to running container: $CONTAINER"
-            docker attach $CONTAINER
-        else
-            ERROR "container: $CONTAINER not exist, please use '$0 --workdir <dir to share>' first"
-            exit -1
-        fi
-        exit $?
-        ;;
     -w | --workdir)
-        # Try to start an existing/stopped container with thie give name $CONTAINER
-        # otherwise, run a new one.
         YOCTODIR=$(readlink -m "$2")
-        if docker inspect $CONTAINER > /dev/null 2>&1 ; then
-            INFO "Reattaching to running container $CONTAINER"
-            docker start -i ${CONTAINER}
-        else
-            INFO "Creating container $CONTAINER"
-            USER=$(whoami)
-            docker run -it \
-                   --volume="$YOCTODIR:/yocto" \
-                   --volume="${HOME}/.ssh:/home/${USER}/.ssh" \
-                   --volume="${HOME}/.gitconfig:/home/${USER}/.gitconfig" \
-                   --volume="/etc/localtime:/etc/localtime:ro" \
-                   --env=HOST_UID=$(id -u) \
-                   --env=HOST_GID=$(id -g) \
-                   --env=USER=${USER} \
-                   --name=$CONTAINER \
-                   $IMAGE
-        fi
+        INFO "Creating container $CONTAINER"
+        docker run --rm -it \
+            --volume="${YOCTODIR}:/yocto" \
+            --volume="${HOME}/.ssh:/home/${USER}/.ssh" \
+            --volume="${HOME}/.gitconfig:/home/${USER}/.gitconfig" \
+            --volume="/etc/localtime:/etc/localtime:ro" \
+            --name=${CONTAINER} \
+            ${IMAGE} \
+            ${@:3}
+        exit $?
+        ;;
+    -b | --buildenv)
+        docker build \
+            --build-arg USER_NAME=${USER} \
+            --build-arg HOST_UID=$(id -u ${USER}) \
+            --build-arg HOST_GID=$(id -g ${USER}) \
+            -t ${IMAGE} .
         exit $?
         ;;
     *)
